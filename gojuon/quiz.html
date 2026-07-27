@@ -331,10 +331,32 @@ document.addEventListener("DOMContentLoaded", function() {
     return alt;
   }
 
-  // 對多字詞做「單點置換」：只挑其中一個位置換成混淆字，其餘不變
+  // 把一串假名字串拆回「假名單位」陣列。
+  // 不能用 String.split("") 按字元切，因為拗音（如「じゅ」）是兩個 Unicode 字元
+  // 組成一個發音單位；若按字元切割，單點置換時可能只換到拗音裡的一半，
+  // 導致湊出資料表裡查不到的組合，拼音跟著跑掉（例如「げきす」「ki-ji-」這類異常結果）。
+  // 做法：由左到右嘗試「先比對兩字元組合，找不到才退回一字元」的最長匹配，
+  // 這樣切出來的每一段都保證是 gojuonData 裡真實存在的假名單位。
+  function splitIntoKanaUnits(word) {
+    const units = [];
+    let i = 0;
+    while (i < word.length) {
+      const twoChar = word.slice(i, i + 2);
+      if (twoChar.length === 2 && gojuonData.some(item => item.kana === twoChar)) {
+        units.push(twoChar);
+        i += 2;
+      } else {
+        units.push(word[i]);
+        i += 1;
+      }
+    }
+    return units;
+  }
+
+  // 對多字詞做「單點置換」：只挑其中一個假名單位換成混淆字，其餘不變
   // 確保換完後羅馬拼音與原本不同，且不會與相鄰位置疊字（避免變相變簡單）
   function generateSinglePointVariant(originalKanaWord) {
-    const chars = originalKanaWord.split("");
+    const chars = splitIntoKanaUnits(originalKanaWord);
     let attempts = 0;
     while (attempts < 30) {
       attempts++;
