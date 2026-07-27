@@ -12,71 +12,12 @@
 <link rel="apple-touch-icon" href="../icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="../icon-512.png">
+<link rel="stylesheet" href="../theme.css">
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
-  html { background: #1c1c1e; }
-  body {
-    margin: 0; padding: 0; min-height: 100%;
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "PingFang TC", "Segoe UI", sans-serif;
-    background: #1c1c1e;
-    color: #E5E5E7;
-    overscroll-behavior: none;
-    touch-action: manipulation;
-  }
-
-  /* 與總覽表頁面一致的容器：置中、統一寬度上限、safe-area 邊距 */
-  #app {
-    max-width: 460px;
-    margin: 0 auto;
-    min-height: 100vh;
-    padding: 16px 16px calc(28px + env(safe-area-inset-bottom));
-    padding-top: calc(16px + env(safe-area-inset-top));
-    display: flex;
-    flex-direction: column;
-    background: #1c1c1e;
-  }
-
-  /* 頂部：回上一頁 icon + 大標題 + 副標題（與總覽表頁面共用樣式） */
-  header { text-align: center; padding: 8px 0 4px; position: relative; }
-  .home-btn {
-    position: absolute;
-    left: 0; top: 6px;
-    width: 34px; height: 34px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.08);
-    border: none;
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .home-btn:active { background: rgba(255,255,255,0.18); }
-  h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: 0.5px; color: #fff; }
-  .subtitle { font-size: 12px; color: #9a9a9e; margin-top: 4px; }
-
-  /* 切換功能按鈕（閃卡練習/總覽表/測驗），與總覽表頁面共用樣式 */
-  .mode-tabs {
-    display: flex;
-    gap: 8px;
-    margin-top: 14px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 14px;
-    padding: 4px;
-  }
-  .mode-tab {
-    flex: 1;
-    text-align: center;
-    padding: 10px 4px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #9a9a9e;
-    background: transparent;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-  }
-  .mode-tab.active { background: #fff; color: #1c1c1e; }
+  /* 這頁專屬：手機上禁止文字選取/捲動回彈，theme.css 是共用頁面不強制加這個 */
+  * { user-select: none; -webkit-user-select: none; }
+  body { color: #E5E5E7; overscroll-behavior: none; touch-action: manipulation; }
+  h1 { color: #fff; }
 
   /* 測驗主內容區：維持原本置中版面邏輯 */
   .quiz-main {
@@ -103,8 +44,8 @@
     flex-shrink: 0;
     transition: width 0.3s ease;
   }
-  .progress-segment.correct-seg { background: #8FA876; /* 莫蘭迪綠色號，答對 */ }
-  .progress-segment.wrong-seg { background: #C17A4D; /* 莫蘭迪橘色號，答錯 */ }
+  .progress-segment.correct-seg { background: var(--color-known); /* 答對，與熟悉度綠色一致 */ }
+  .progress-segment.wrong-seg { background: var(--color-review); /* 答錯，與需加強橘色一致 */ }
 
   /* 題目卡片 */
   .quiz-card {

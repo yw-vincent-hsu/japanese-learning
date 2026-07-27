@@ -12,66 +12,11 @@
 <link rel="apple-touch-icon" href="../icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="../icon-512.png">
+<link rel="stylesheet" href="../theme.css">
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
-  html { background: #1c1c1e; }
-  body {
-    margin: 0; padding: 0; min-height: 100%;
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "PingFang TC", "Segoe UI", sans-serif;
-    background: #1c1c1e;
-    color: #fff;
-    overscroll-behavior: none;
-    touch-action: manipulation;
-  }
-  #app {
-    max-width: 460px;
-    margin: 0 auto;
-    min-height: 100vh;
-    padding: 16px 16px calc(28px + env(safe-area-inset-bottom));
-    padding-top: calc(16px + env(safe-area-inset-top));
-    display: flex;
-    flex-direction: column;
-    background: #1c1c1e;
-  }
-  header { text-align: center; padding: 8px 0 4px; position: relative; }
-  .home-btn {
-    position: absolute;
-    left: 0; top: 6px;
-    width: 34px; height: 34px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.08);
-    border: none;
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .home-btn:active { background: rgba(255,255,255,0.18); }
-  h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
-  .subtitle { font-size: 12px; color: #9a9a9e; margin-top: 4px; }
-
-  .mode-tabs {
-    display: flex;
-    gap: 8px;
-    margin-top: 14px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 14px;
-    padding: 4px;
-  }
-  .mode-tab {
-    flex: 1;
-    text-align: center;
-    padding: 10px 4px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #9a9a9e;
-    background: transparent;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-  }
-  .mode-tab.active { background: #fff; color: #1c1c1e; }
+  /* 這頁專屬：手機上禁止文字選取/捲動回彈，theme.css 是共用頁面不強制加這個 */
+  * { user-select: none; -webkit-user-select: none; }
+  body { overscroll-behavior: none; touch-action: manipulation; }
 
   .stats-bar {
     margin-top: 14px;
@@ -82,8 +27,6 @@
   .stats-row { display: flex; justify-content: space-between; font-size: 12px; color: #c7c7cc; margin-bottom: 8px; }
   .stats-row b { color: #fff; font-size: 13px; }
   .progress-track { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; display: flex; }
-  .progress-known { background: #8FA876; height: 100%; transition: width 0.3s; }
-  .progress-review { background: #C17A4D; height: 100%; transition: width 0.3s; }
 
   .filters { display: flex; gap: 8px; margin-top: 14px; }
   select { display: none; }
