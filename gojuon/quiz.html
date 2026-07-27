@@ -94,6 +94,42 @@
   .opt-btn.correct { background: #3B5842 !important; border-color: #8FA876 !important; color: #FFF; }
   .opt-btn.wrong { background: #4A3324 !important; border-color: #C17A4D !important; color: #FFF; } /* 答錯改用橘色 #C17A4D */
 
+  /* 下拉選單樣式：與閃卡/總覽表頁面 (index_gojuon_.html) 共用同一套設計 */
+  .filters { display: flex; gap: 8px; margin-top: 14px; width: 100%; max-width: 380px; }
+  select { display: none; }
+  .dd { position: relative; flex: 1; }
+  .dd-btn {
+    width: 100%; background: rgba(255,255,255,0.08); color: #e4e4e7;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px; padding: 10px 12px; font-size: 13px; text-align: center;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: inherit;
+  }
+  .dd-btn .dd-chevron { width: 12px; height: 12px; flex-shrink: 0; transition: transform 0.2s; opacity: 0.6; }
+  .dd.open .dd-btn .dd-chevron { transform: rotate(180deg); }
+  .dd-panel {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 40;
+    background: #232325; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px; padding: 6px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+    max-height: 280px; overflow-y: auto;
+    display: none;
+  }
+  .dd.open .dd-panel { display: block; }
+  .dd-opt {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    position: relative;
+    padding: 10px 10px; border-radius: 9px; font-size: 14px; color: #e4e4e7;
+  }
+  .dd-opt:hover { background: rgba(255,255,255,0.1); }
+  .dd-opt:active { background: rgba(255,255,255,0.16); }
+  .dd-opt.selected { color: #fff; font-weight: 600; }
+  .dd-opt .dd-check {
+    position: absolute; left: 10px; width: 14px; height: 14px; opacity: 0;
+    color: #C17A4D;
+  }
+  .dd-opt.selected .dd-check { opacity: 1; }
+
   /* 結算畫面 */
   .result-card {
     display: none;
@@ -135,6 +171,33 @@
     <button class="mode-tab active" data-mode="quiz">測驗</button>
   </div>
 
+  <div class="filters">
+    <div class="dd" id="scriptDD">
+      <button type="button" class="dd-btn" id="scriptDDBtn">
+        <span id="scriptDDLabel">平假名</span>
+        <svg class="dd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div class="dd-panel" id="scriptDDPanel"></div>
+    </div>
+    <select id="scriptFilter">
+      <option value="hiragana">平假名</option>
+      <option value="katakana">片假名</option>
+    </select>
+    <div class="dd" id="groupDD">
+      <button type="button" class="dd-btn" id="groupDDBtn">
+        <span id="groupDDLabel">清音</span>
+        <svg class="dd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div class="dd-panel" id="groupDDPanel"></div>
+    </div>
+    <select id="groupFilter">
+      <option value="all">全部類型</option>
+      <option value="seion">清音</option>
+      <option value="dakuten">濁音/半濁音</option>
+      <option value="youon">拗音</option>
+    </select>
+  </div>
+
   <div class="quiz-main">
   <div class="progress-bar-bg">
     <div class="progress-segment correct-seg" id="correctSegment"></div>
@@ -164,12 +227,15 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
   // 五十音資料統一從 gojuon.json 讀取（與閃卡/總覽表共用同一份資料源）
-  // 依 URL 參數決定要出「平假名」或「片假名」的題目，例如 quiz.html?mode=katakana
-  const urlParams = new URLSearchParams(window.location.search);
-  const quizMode = urlParams.get('mode') || 'hiragana';
+  // 出題範圍（平假名/片假名、清音/濁音/拗音）改由畫面上的下拉選單即時控制，
+  // 不再透過 URL 參數 (?mode=) 決定，行為與 index_gojuon_.html 的篩選器一致
   const dataFile = 'gojuon.json';
 
-  let gojuonData = []; // 由 fetch 載入、篩選、過濾後賦值，初始化前不會被使用
+  let allGojuonData = []; // fetch 載入後的完整原始資料（未篩選）
+  let gojuonData = [];    // 依目前篩選條件過濌後、實際出題用的資料
+
+  const scriptFilter = document.getElementById('scriptFilter');
+  const groupFilter = document.getElementById('groupFilter');
 
   // 不能放在單字開頭的特殊字（發音防呆）
   const invalidPrefixes = ['ん', 'っ', 'ー'];
@@ -237,18 +303,13 @@ document.addEventListener("DOMContentLoaded", function() {
     return { kana: kanaWord, romaji: romajiWord };
   }
 
-  // 取得某個假名的混淆候選字（優先用資料表裡的 confusing，找不到則用同母音字當備援）
-  const seionRows = {
-    a: ["あ","か","さ","た","な","は","ま","や","ら","わ"],
-    i: ["い","き","し","ち","に","ひ","み","り"],
-    u: ["う","く","す","つ","ぬ","ふ","む","ゆ","る"],
-    e: ["え","け","せ","て","ね","へ","め","れ"],
-    o: ["お","こ","そ","と","の","ほ","も","よ","ろ","を"]
-  };
-  const vowelOfKana = {};
-  Object.keys(seionRows).forEach(v => {
-    seionRows[v].forEach(k => { vowelOfKana[k] = v; });
-  });
+  // 取得某個假名的混淆候選字（優先用資料表裡的 confusing；找不到則用「同母音」字當備援）
+  // 母音分組是依「目前實際出題範圍」(gojuonData) 動態算出，而非寫死平假名清音表，
+  // 這樣無論篩選成平假名/片假名、清音/濁音/拗音，備援邏輯都能正確運作
+  function getVowel(romaji) {
+    const m = romaji.match(/[aiueo]/);
+    return m ? m[0] : null;
+  }
 
   function getConfusableFor(kana) {
     const found = gojuonData.find(item => item.kana === kana);
@@ -256,11 +317,13 @@ document.addEventListener("DOMContentLoaded", function() {
       const validConfusing = found.confusing.filter(c => c !== kana);
       if (validConfusing.length > 0) return getRandomItem(validConfusing);
     }
-    // 備援：同母音字（排除自己）
-    const v = vowelOfKana[kana];
-    if (v) {
-      const sameRow = seionRows[v].filter(c => c !== kana);
-      if (sameRow.length > 0) return getRandomItem(sameRow);
+    // 備援：同母音字（排除自己），依目前題庫範圍動態算
+    if (found) {
+      const v = getVowel(found.romaji);
+      if (v) {
+        const sameRow = gojuonData.filter(item => item.kana !== kana && getVowel(item.romaji) === v);
+        if (sameRow.length > 0) return getRandomItem(sameRow).kana;
+      }
     }
     // 最終備援：完全隨機（排除自己）
     let alt;
@@ -432,7 +495,97 @@ document.addEventListener("DOMContentLoaded", function() {
     }, 1000);
   }
 
-  // 顯示結果
+  // ------- 下拉選單：與 index_gojuon_.html 共用同一套設計與互動邏輯 -------
+  const CHECK_ICON = '<svg class="dd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  const DD_NATIVE = { script: scriptFilter, group: groupFilter };
+
+  function buildDropdown(prefix, options) {
+    const dd = document.getElementById(prefix + "DD");
+    const panel = document.getElementById(prefix + "DDPanel");
+    const label = document.getElementById(prefix + "DDLabel");
+    const nativeSelect = DD_NATIVE[prefix];
+    const currentVal = nativeSelect.value || options[0].value;
+
+    panel.innerHTML = options.map(o =>
+      `<div class="dd-opt${o.value === currentVal ? " selected" : ""}" data-value="${o.value}">${CHECK_ICON}<span>${o.label}</span></div>`
+    ).join("");
+    const selected = options.find(o => o.value === currentVal) || options[0];
+    label.textContent = selected.label;
+
+    panel.querySelectorAll(".dd-opt").forEach(opt => {
+      opt.addEventListener("click", () => {
+        const val = opt.dataset.value;
+        nativeSelect.value = val;
+        panel.querySelectorAll(".dd-opt").forEach(o => o.classList.remove("selected"));
+        opt.classList.add("selected");
+        label.textContent = opt.textContent.trim();
+        dd.classList.remove("open");
+        nativeSelect.dispatchEvent(new Event("change"));
+      });
+    });
+  }
+
+  document.querySelectorAll(".dd-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const dd = btn.closest(".dd");
+      const wasOpen = dd.classList.contains("open");
+      document.querySelectorAll(".dd.open").forEach(d => d.classList.remove("open"));
+      if (!wasOpen) dd.classList.add("open");
+    });
+  });
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".dd.open").forEach(d => d.classList.remove("open"));
+  });
+
+  // 依目前下拉選單狀態重新篩選題庫，並從第一題重新開始
+  // 測驗只支援單一文字系統出題（不混平假名/片假名），分類則可選「全部類型」混合出題
+  function applyQuizFilters() {
+    if (pendingTimeoutId !== null) {
+      clearTimeout(pendingTimeoutId);
+      pendingTimeoutId = null;
+    }
+
+    const script = scriptFilter.value;
+    const group = groupFilter.value;
+
+    const filtered = allGojuonData.filter(item =>
+      item.script === script &&
+      (group === 'all' || item.group === group) &&
+      Array.isArray(item.confusing) &&
+      item.confusing.length > 0
+    );
+
+    if (filtered.length === 0) {
+      quizArea.style.display = 'none';
+      resultCard.style.display = 'none';
+      questionText.textContent = '';
+      quizType.textContent = '';
+      optionsGrid.innerHTML = '';
+      const errMsg = document.createElement('p');
+      errMsg.style.color = '#98989D';
+      errMsg.style.fontSize = '14px';
+      errMsg.textContent = '這個篩選條件下沒有可用的題庫資料，請切換分類再試一次。';
+      quizArea.querySelector('.quiz-card').appendChild(errMsg);
+      quizArea.style.display = 'flex';
+      return;
+    }
+
+    gojuonData = filtered;
+    isAnswering = false;
+    currentStep = 0;
+    score = 0;
+    correctCount = 0;
+    correctSegment.style.width = '0%';
+    wrongSegment.style.width = '0%';
+    quizArea.style.display = 'flex';
+    resultCard.style.display = 'none';
+    nextQuestion();
+  }
+
+  scriptFilter.addEventListener('change', applyQuizFilters);
+  groupFilter.addEventListener('change', applyQuizFilters);
+
   function showResult() {
     quizArea.style.display = 'none';
     resultCard.style.display = 'block';
@@ -449,46 +602,30 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // 重新開始
   document.getElementById('restartBtn').addEventListener('click', function() {
-    if (pendingTimeoutId !== null) {
-      clearTimeout(pendingTimeoutId);
-      pendingTimeoutId = null;
-    }
-    currentStep = 0;
-    score = 0;
-    correctCount = 0;
-    correctSegment.style.width = '0%';
-    wrongSegment.style.width = '0%';
-    quizArea.style.display = 'flex';
-    resultCard.style.display = 'none';
-    nextQuestion();
+    applyQuizFilters();
   });
 
-  // 載入資料後才啟動測驗；若載入失敗或題庫為空則顯示錯誤訊息，不讓程式在資料缺失狀態下執行
+  // 載入資料後才啟動測驗；若載入失敗則顯示錯誤訊息，不讓程式在資料缺失狀態下執行
   fetch(dataFile)
     .then(res => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     })
     .then(loadedData => {
-      // 篩選出對應文字系統（平假名/片假名）且已標註 confusing 的清音資料
-      // 目前測驗機制僅支援清音（group === 'seion'）；濁音/半濁音/拗音若之後要納入測驗，
-      // 需先在 gojuon.json 對應項目補上 confusing 欄位，這裡的篩選條件才需要放寬
-      const filtered = loadedData.filter(item =>
-        item.script === quizMode &&
-        item.group === 'seion' &&
-        Array.isArray(item.confusing) &&
-        item.confusing.length > 0
-      );
+      allGojuonData = loadedData;
 
-      if (filtered.length === 0) {
-        throw new Error(`找不到「${quizMode}」的可用題庫資料（尚未標註 confusing 欄位）`);
-      }
+      buildDropdown("script", [
+        { value: "hiragana", label: "平假名" },
+        { value: "katakana", label: "片假名" }
+      ]);
+      buildDropdown("group", [
+        { value: "all", label: "全部類型" },
+        { value: "seion", label: "清音" },
+        { value: "dakuten", label: "濁音/半濁音" },
+        { value: "youon", label: "拗音" }
+      ]);
 
-      gojuonData = filtered;
-      // 初始化啟動第一題
-      correctSegment.style.width = '0%';
-      wrongSegment.style.width = '0%';
-      nextQuestion();
+      applyQuizFilters();
     })
     .catch(err => {
       questionText.textContent = '';
