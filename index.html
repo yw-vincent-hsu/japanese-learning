@@ -12,28 +12,13 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<link rel="stylesheet" href="./theme.css">
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html { background: #1c1c1e; }
-  body {
-    margin: 0; padding: 0; min-height: 100%;
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "PingFang TC", "Segoe UI", sans-serif;
-    background: #1c1c1e;
-    color: #fff;
-  }
-  #app {
-    max-width: 460px;
-    margin: 0 auto;
-    min-height: 100vh;
-    padding: 16px 16px calc(28px + env(safe-area-inset-bottom));
-    padding-top: calc(40px + env(safe-area-inset-top));
-    display: flex;
-    flex-direction: column;
-    background: #1c1c1e;
-  }
-  header { text-align: center; margin-bottom: 8px; }
-  h1 { font-size: 24px; margin: 0; font-weight: 700; letter-spacing: 0.5px; }
-  .subtitle { font-size: 13px; color: #9a9a9e; margin-top: 6px; }
+  /* 首頁專屬樣式（不放進 theme.css，因為只有這頁用到） */
+  #app { padding-top: calc(40px + env(safe-area-inset-top)); }
+  header { margin-bottom: 8px; }
+  h1 { font-size: 24px; font-weight: 700; }
+  .subtitle { font-size: 13px; margin-top: 6px; }
 
   .card-list { display: flex; flex-direction: column; gap: 14px; margin-top: 32px; }
 
@@ -81,8 +66,8 @@
     overflow: hidden;
     display: flex;
   }
-  .tool-progress-known { background: #8FA876; height: 100%; transition: width 0.3s; }
-  .tool-progress-review { background: #C17A4D; height: 100%; transition: width 0.3s; }
+  .tool-progress-known { background: var(--color-known); height: 100%; transition: width 0.3s; }
+  .tool-progress-review { background: var(--color-review); height: 100%; transition: width 0.3s; }
 
   footer {
     margin-top: auto;
