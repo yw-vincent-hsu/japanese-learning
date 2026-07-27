@@ -62,6 +62,7 @@ h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
   background: rgba(255,255,255,0.06);
   border-radius: 14px;
   padding: 4px;
+  position: relative;
 }
 .mode-tab {
   flex: 1;
@@ -78,8 +79,21 @@ h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
   justify-content: center;
   text-decoration: none;
   font-family: inherit;
+  position: relative;
+  z-index: 1;
+  transition: color 0.25s ease;
 }
-.mode-tab.active { background: #fff; color: #1c1c1e; }
+.mode-tab.active { color: #1c1c1e; }
+
+/* 滑動高亮塊：由 JS 動態定位在目前 active 的 tab 上 */
+.mode-tab-highlight {
+  position: absolute;
+  top: 4px; bottom: 4px;
+  border-radius: 10px;
+  background: #fff;
+  transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
 
 /* 已熟悉／需加強 進度色塊，供進度條、狀態點等共用 */
 .progress-known { background: var(--color-known); height: 100%; transition: width 0.3s; }
