@@ -673,6 +673,35 @@ document.addEventListener("DOMContentLoaded", function() {
       console.error('五十音資料載入失敗:', err);
     });
 });
+
+// 點擊會換頁的 tab（閃卡練習／總覽表）時，先讓整頁淡出再導頁，
+// 銜接對方頁面進場的淡入，減少換頁瞬間的生硬感
+document.querySelectorAll(".mode-tab[href]").forEach(link => {
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    const href = link.getAttribute("href");
+    document.getElementById("app").style.transition = "opacity 0.15s ease";
+    document.getElementById("app").style.opacity = "0";
+    setTimeout(() => { window.location.href = href; }, 150);
+  });
+});
+
+// 幫目前 active 的「測驗」tab 補上白色高亮底（沿用共用的 .mode-tab-highlight 樣式）
+(function initTabHighlight() {
+  const activeBtn = document.querySelector(".mode-tabs .mode-tab.active");
+  if (!activeBtn) return;
+  const tabs = activeBtn.closest(".mode-tabs");
+  const hl = document.createElement("div");
+  hl.className = "mode-tab-highlight";
+  hl.style.transition = "none";
+  tabs.insertBefore(hl, tabs.firstChild);
+  tabs.classList.add("has-highlight");
+  requestAnimationFrame(() => {
+    hl.style.left = activeBtn.offsetLeft + "px";
+    hl.style.width = activeBtn.offsetWidth + "px";
+    requestAnimationFrame(() => { hl.style.transition = ""; });
+  });
+})();
 </script>
 
 </body>
