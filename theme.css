@@ -1,0 +1,86 @@
+/* ============================================
+   theme.css — 日文學習工具集 共用樣式
+   給 index.html / gojuon/index.html / gojuon/quiz.html 共用
+   只放「三頁都一樣」的規則；各頁專屬樣式留在各自檔案的 <style> 裡
+   ============================================ */
+
+:root {
+  --bg: #1c1c1e;
+  --color-known: #8FA876;   /* 莫蘭迪綠，代表「已熟悉/答對」 */
+  --color-review: #C17A4D;  /* 莫蘭迪橘，代表「需加強/答錯」 */
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "PingFang TC", "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: #fff;
+}
+
+/* 頁面主容器：置中、統一寬度上限、safe-area 邊距 */
+#app {
+  max-width: 460px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 16px 16px calc(28px + env(safe-area-inset-bottom));
+  padding-top: calc(16px + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* 頂部標題區（含返回首頁按鈕） */
+header { text-align: center; padding: 8px 0 4px; position: relative; }
+.home-btn {
+  position: absolute;
+  left: 0; top: 6px;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.home-btn:active { background: rgba(255,255,255,0.18); }
+h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
+.subtitle { font-size: 12px; color: #9a9a9e; margin-top: 4px; }
+
+/* 分頁切換列（閃卡練習 / 總覽表 / 測驗） */
+.mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 4px;
+}
+.mode-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 4px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #9a9a9e;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-family: inherit;
+}
+.mode-tab.active { background: #fff; color: #1c1c1e; }
+
+/* 已熟悉／需加強 進度色塊，供進度條、狀態點等共用 */
+.progress-known { background: var(--color-known); height: 100%; transition: width 0.3s; }
+.progress-review { background: var(--color-review); height: 100%; transition: width 0.3s; }
