@@ -490,21 +490,68 @@ document.getElementById("resetBtn").addEventListener("click", () => {
 
 document.querySelectorAll(".mode-tab").forEach(btn => {
   btn.addEventListener("click", () => {
+    if (btn.classList.contains("active")) return;
     document.querySelectorAll(".mode-tab").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
+    moveTabHighlight(btn);
     currentView = btn.dataset.mode;
     closeWordModal();
-    if (currentView === "flash") {
-      flashView.style.display = "";
-      gridView.style.display = "none";
-      applyFilters();
-    } else {
-      flashView.style.display = "none";
-      gridView.style.display = "";
-      renderGrid();
-    }
+    const showEl = currentView === "flash" ? flashView : gridView;
+    const hideEl = currentView === "flash" ? gridView : flashView;
+    crossFadeView(showEl, hideEl, () => {
+      if (currentView === "flash") { applyFilters(); } else { renderGrid(); }
+    });
   });
 });
+
+// 淡出目前畫面、換內容、再淡入，避免閃卡/總覽表切換時的生硬跳動
+function crossFadeView(showEl, hideEl, onSwap) {
+  hideEl.style.transition = "opacity 0.15s ease";
+  hideEl.style.opacity = "0";
+  setTimeout(() => {
+    hideEl.style.display = "none";
+    if (onSwap) onSwap();
+    showEl.style.display = "";
+    showEl.style.opacity = "0";
+    showEl.style.transition = "none";
+    requestAnimationFrame(() => {
+      showEl.style.transition = "opacity 0.2s ease";
+      showEl.style.opacity = "1";
+    });
+  }, 150);
+}
+
+// 在目前 active 的 tab 底下插入/移動一塊白色高亮塊，做滑動動畫
+function moveTabHighlight(activeBtn) {
+  const tabs = activeBtn.closest(".mode-tabs");
+  if (!tabs) return;
+  let hl = tabs.querySelector(".mode-tab-highlight");
+  if (!hl) {
+    hl = document.createElement("div");
+    hl.className = "mode-tab-highlight";
+    tabs.insertBefore(hl, tabs.firstChild);
+    tabs.classList.add("has-highlight");
+  }
+  hl.style.left = activeBtn.offsetLeft + "px";
+  hl.style.width = activeBtn.offsetWidth + "px";
+}
+
+// 頁面載入時先幫目前 active 的 tab 定位一次高亮塊（無動畫，避免進場位移感）
+(function initTabHighlight() {
+  const activeBtn = document.querySelector(".mode-tabs .mode-tab.active");
+  if (!activeBtn) return;
+  const tabs = activeBtn.closest(".mode-tabs");
+  const hl = document.createElement("div");
+  hl.className = "mode-tab-highlight";
+  hl.style.transition = "none";
+  tabs.insertBefore(hl, tabs.firstChild);
+  tabs.classList.add("has-highlight");
+  requestAnimationFrame(() => {
+    hl.style.left = activeBtn.offsetLeft + "px";
+    hl.style.width = activeBtn.offsetWidth + "px";
+    requestAnimationFrame(() => { hl.style.transition = ""; });
+  });
+})();
 
 const wordModalOverlay = document.getElementById("wordModalOverlay");
 const wordModalCard = document.getElementById("wordModalCard");
