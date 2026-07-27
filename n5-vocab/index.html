@@ -41,16 +41,28 @@
     border-radius: 14px; padding: 6px;
     box-shadow: 0 12px 28px rgba(0,0,0,0.45);
     max-height: 280px; overflow-y: auto;
-    display: none;
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+    transform-origin: top center;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
   }
-  .dd.open .dd-panel { display: block; }
+  .dd.open .dd-panel {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
   .dd-opt {
     display: flex; align-items: center; justify-content: center; gap: 8px;
     position: relative;
     padding: 10px 10px; border-radius: 9px; font-size: 14px; color: #e4e4e7;
+    transition: background 0.15s ease, transform 0.1s ease;
   }
   .dd-opt:hover { background: rgba(255,255,255,0.1); }
-  .dd-opt:active { background: rgba(255,255,255,0.16); }
+  .dd-opt:active { background: rgba(255,255,255,0.16); transform: scale(0.97); }
   .dd-opt.selected { color: #fff; font-weight: 600; }
   .dd-opt .dd-check {
     position: absolute; left: 10px; width: 14px; height: 14px; opacity: 0;
