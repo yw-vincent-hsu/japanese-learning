@@ -272,44 +272,47 @@
     <button class="mode-tab" data-mode="quiz" id="quizTabBtn">測驗</button>
   </div>
 
-  <div class="stats-bar">
-    <div class="stats-row">
-      <span>整體進度</span>
-      <span><b id="statKnown">0</b> 已熟悉 ・ <b id="statReview">0</b> 需加強 ・ <b id="statTotal">0</b> 總數</span>
+  <div id="sharedProgressArea">
+    <div class="stats-bar">
+      <div class="stats-row">
+        <span>整體進度</span>
+        <span><b id="statKnown">0</b> 已熟悉 ・ <b id="statReview">0</b> 需加強 ・ <b id="statTotal">0</b> 總數</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-known" id="progKnown" style="width:0%"></div>
+        <div class="progress-review" id="progReview" style="width:0%"></div>
+      </div>
     </div>
-    <div class="progress-track">
-      <div class="progress-known" id="progKnown" style="width:0%"></div>
-      <div class="progress-review" id="progReview" style="width:0%"></div>
+
+    <div class="filters">
+      <div class="dd" id="scriptDD">
+        <button type="button" class="dd-btn" id="scriptDDBtn">
+          <span id="scriptDDLabel">平假名+片假名</span>
+          <svg class="dd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="dd-panel" id="scriptDDPanel"></div>
+      </div>
+      <select id="scriptFilter">
+        <option value="all">平假名+片假名</option>
+        <option value="hiragana">平假名</option>
+        <option value="katakana">片假名</option>
+      </select>
+      <div class="dd" id="groupDD">
+        <button type="button" class="dd-btn" id="groupDDBtn">
+          <span id="groupDDLabel">全部類型</span>
+          <svg class="dd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="dd-panel" id="groupDDPanel"></div>
+      </div>
+      <select id="groupFilter">
+        <option value="all">全部類型</option>
+        <option value="seion">清音</option>
+        <option value="dakuten">濁音/半濁音</option>
+        <option value="youon">拗音</option>
+      </select>
     </div>
   </div>
 
-  <div class="filters">
-    <div class="dd" id="scriptDD">
-      <button type="button" class="dd-btn" id="scriptDDBtn">
-        <span id="scriptDDLabel">平假名+片假名</span>
-        <svg class="dd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      </button>
-      <div class="dd-panel" id="scriptDDPanel"></div>
-    </div>
-    <select id="scriptFilter">
-      <option value="all">平假名+片假名</option>
-      <option value="hiragana">平假名</option>
-      <option value="katakana">片假名</option>
-    </select>
-    <div class="dd" id="groupDD">
-      <button type="button" class="dd-btn" id="groupDDBtn">
-        <span id="groupDDLabel">全部類型</span>
-        <svg class="dd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      </button>
-      <div class="dd-panel" id="groupDDPanel"></div>
-    </div>
-    <select id="groupFilter">
-      <option value="all">全部類型</option>
-      <option value="seion">清音</option>
-      <option value="dakuten">濁音/半濁音</option>
-      <option value="youon">拗音</option>
-    </select>
-  </div>
 
   <div id="flashView">
     <div class="filters" style="margin-top:8px;">
@@ -429,6 +432,7 @@ const saveIndicator = document.getElementById("saveIndicator");
 const gridView = document.getElementById("gridView");
 const flashView = document.getElementById("flashView");
 const quizView = document.getElementById("quizView");
+const sharedProgressArea = document.getElementById("sharedProgressArea");
 
 const CHECK_ICON = '<svg class="dd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 const DD_NATIVE = { script: scriptFilter, group: groupFilter, status: statusFilter };
@@ -665,6 +669,14 @@ document.querySelectorAll(".mode-tab[data-mode]").forEach(btn => {
     const prevView = currentView;
     currentView = btn.dataset.mode;
     const viewEl = { flash: flashView, grid: gridView, quiz: quizView };
+    // 「整體進度」與「平假名+片假名／全部類型」篩選器只有閃卡/總覽表在用，
+    // 切到測驗時要跟著淡出隱藏；從測驗切回閃卡/總覽表則要淡入恢復
+    const showSharedArea = (currentView !== "quiz");
+    if (showSharedArea) {
+      fadeInEl(sharedProgressArea);
+    } else {
+      fadeOutEl(sharedProgressArea);
+    }
     crossFadeView(viewEl[currentView], viewEl[prevView], () => {
       if (currentView === "flash") { applyFilters(); }
       else if (currentView === "grid") { renderGrid(); }
@@ -688,6 +700,26 @@ function crossFadeView(showEl, hideEl, onSwap) {
       showEl.style.opacity = "1";
     });
   }, 150);
+}
+
+// 淡出後徹底從版面移除（display:none），避免佔位置留白
+function fadeOutEl(el) {
+  if (el.style.display === "none") return;
+  el.style.transition = "opacity 0.15s ease";
+  el.style.opacity = "0";
+  setTimeout(() => { el.style.display = "none"; }, 150);
+}
+
+// 從隱藏狀態淡入回來
+function fadeInEl(el) {
+  if (el.style.display !== "none" && el.style.opacity !== "0") return;
+  el.style.display = "";
+  el.style.opacity = "0";
+  el.style.transition = "none";
+  requestAnimationFrame(() => {
+    el.style.transition = "opacity 0.2s ease";
+    el.style.opacity = "1";
+  });
 }
 
 // 在目前 active 的 tab 底下插入/移動一塊白色高亮塊，做滑動動畫
