@@ -162,6 +162,98 @@
   .grid-cell .r { font-size: 10px; color: #9a9a9e; margin-top: 2px; }
   .grid-cell.empty { background: transparent; }
   .grid-cell .dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; }
+
+  /* ===== 測驗模式專屬樣式（合併自 quiz.html） ===== */
+  .quiz-main {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .progress-bar-bg {
+    width: 100%;
+    max-width: 380px;
+    height: 6px;
+    background: #2C2C2E;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    display: flex;
+  }
+  .progress-segment {
+    height: 100%;
+    width: 0%;
+    flex-shrink: 0;
+    transition: width 0.3s ease;
+  }
+  .progress-segment.correct-seg { background: var(--color-known); }
+  .progress-segment.wrong-seg { background: var(--color-review); }
+
+  .quiz-card {
+    width: 100%;
+    max-width: 380px;
+    background: #2C2C2E;
+    border: 0.5px solid #3A3A3C;
+    border-radius: 16px;
+    padding: 32px 20px;
+    text-align: center;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .quiz-type { font-size: 13px; color: #98989D; margin-bottom: 12px; letter-spacing: 0.05em; }
+  .question-text {
+    font-size: 42px;
+    font-weight: 700;
+    color: #FFFFFF;
+    letter-spacing: 0.08em;
+    min-height: 52px;
+  }
+
+  .options-grid {
+    width: 100%;
+    max-width: 380px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .opt-btn {
+    padding: 16px 10px;
+    background: #2C2C2E;
+    border: 1px solid #3A3A3C;
+    border-radius: 12px;
+    color: #E5E5E7;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+  .opt-btn:active { transform: scale(0.97); }
+  .opt-btn.correct { background: #3B5842 !important; border-color: #8FA876 !important; color: #FFF; }
+  .opt-btn.wrong { background: #4A3324 !important; border-color: #C17A4D !important; color: #FFF; }
+
+  .result-card {
+    display: none;
+    width: 100%;
+    max-width: 380px;
+    background: #2C2C2E;
+    border-radius: 16px;
+    padding: 32px 20px;
+    text-align: center;
+    border: 0.5px solid #3A3A3C;
+  }
+  .result-score { font-size: 48px; font-weight: 800; color: #8FA876; margin: 12px 0; }
+  .restart-btn {
+    margin-top: 20px;
+    padding: 12px 28px;
+    background: #8FA876;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -177,7 +269,7 @@
   <div class="mode-tabs">
     <button class="mode-tab" data-mode="flash" id="flashTabBtn">閃卡練習</button>
     <button class="mode-tab" data-mode="grid" id="gridTabBtn">總覽表</button>
-    <a class="mode-tab" href="quiz.html" id="quizTab">測驗</a>
+    <button class="mode-tab" data-mode="quiz" id="quizTabBtn">測驗</button>
   </div>
 
   <div class="stats-bar">
@@ -251,6 +343,57 @@
   </div>
 
   <div id="gridView" class="grid-view"></div>
+
+  <div id="quizView" style="display:none;">
+    <div class="filters" style="margin-top:14px;">
+      <div class="dd" id="quizScriptDD">
+        <button type="button" class="dd-btn" id="quizScriptDDBtn">
+          <span id="quizScriptDDLabel">平假名</span>
+          <svg class="dd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="dd-panel" id="quizScriptDDPanel"></div>
+      </div>
+      <select id="quizScriptFilter">
+        <option value="hiragana">平假名</option>
+        <option value="katakana">片假名</option>
+      </select>
+      <div class="dd" id="quizGroupDD">
+        <button type="button" class="dd-btn" id="quizGroupDDBtn">
+          <span id="quizGroupDDLabel">全部類型</span>
+          <svg class="dd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="dd-panel" id="quizGroupDDPanel"></div>
+      </div>
+      <select id="quizGroupFilter">
+        <option value="all">全部類型</option>
+        <option value="seion">清音</option>
+        <option value="dakuten">濁音/半濁音</option>
+        <option value="youon">拗音</option>
+      </select>
+    </div>
+
+    <div class="quiz-main">
+      <div class="progress-bar-bg">
+        <div class="progress-segment correct-seg" id="correctSegment"></div>
+        <div class="progress-segment wrong-seg" id="wrongSegment"></div>
+      </div>
+
+      <div id="quizArea" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+        <div class="quiz-card">
+          <div class="quiz-type" id="quizType">載入題庫中…</div>
+          <div class="question-text" id="questionText">　</div>
+        </div>
+        <div class="options-grid" id="optionsGrid"></div>
+      </div>
+
+      <div class="result-card" id="resultCard">
+        <h2 style="margin: 0; font-size: 20px;">測驗完成</h2>
+        <div class="result-score" id="scoreText">100 分</div>
+        <p style="color: #98989D; font-size: 14px;" id="feedbackText">你的五十音拼讀速度非常快！</p>
+        <button class="restart-btn" id="restartBtn">再挑戰一次</button>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="save-indicator" id="saveIndicator">已儲存</div>
 
@@ -285,6 +428,7 @@ const statusFilter = document.getElementById("statusFilter");
 const saveIndicator = document.getElementById("saveIndicator");
 const gridView = document.getElementById("gridView");
 const flashView = document.getElementById("flashView");
+const quizView = document.getElementById("quizView");
 
 const CHECK_ICON = '<svg class="dd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 const DD_NATIVE = { script: scriptFilter, group: groupFilter, status: statusFilter };
@@ -511,23 +655,25 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   }
 });
 
-// 只對「切換顯示模式」用的按鈕綁定事件，測驗分頁是純連結跳轉，不參與這段邏輯
+// 只對「切換顯示模式」用的按鈕綁定事件
 document.querySelectorAll(".mode-tab[data-mode]").forEach(btn => {
   btn.addEventListener("click", () => {
     if (btn.classList.contains("active")) return;
     document.querySelectorAll(".mode-tab[data-mode]").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     moveTabHighlight(btn);
+    const prevView = currentView;
     currentView = btn.dataset.mode;
-    const showEl = currentView === "flash" ? flashView : gridView;
-    const hideEl = currentView === "flash" ? gridView : flashView;
-    crossFadeView(showEl, hideEl, () => {
-      if (currentView === "flash") { applyFilters(); } else { renderGrid(); }
+    const viewEl = { flash: flashView, grid: gridView, quiz: quizView };
+    crossFadeView(viewEl[currentView], viewEl[prevView], () => {
+      if (currentView === "flash") { applyFilters(); }
+      else if (currentView === "grid") { renderGrid(); }
+      else if (currentView === "quiz") { initQuizIfNeeded(); }
     });
   });
 });
 
-// 淡出目前畫面、換內容、再淡入，避免閃卡/總覽表切換時的生硬跳動
+// 淡出目前畫面、換內容、再淡入，避免切換模式時的生硬跳動
 function crossFadeView(showEl, hideEl, onSwap) {
   hideEl.style.transition = "opacity 0.15s ease";
   hideEl.style.opacity = "0";
@@ -558,18 +704,6 @@ function moveTabHighlight(activeBtn) {
   hl.style.left = activeBtn.offsetLeft + "px";
   hl.style.width = activeBtn.offsetWidth + "px";
 }
-
-// 點擊會換頁的 tab（例如「測驗」）時，先讓整頁淡出再導頁，
-// 銜接對方頁面進場的淡入，減少換頁瞬間的生硬感
-document.querySelectorAll(".mode-tab[href]").forEach(link => {
-  link.addEventListener("click", (e) => {
-    e.preventDefault();
-    const href = link.getAttribute("href");
-    document.getElementById("app").style.transition = "opacity 0.15s ease";
-    document.getElementById("app").style.opacity = "0";
-    setTimeout(() => { window.location.href = href; }, 150);
-  });
-});
 
 // 頁面載入時先幫目前 active 的 tab 定位一次高亮塊（無動畫，避免進場位移感）
 (function initTabHighlight() {
@@ -658,6 +792,397 @@ function renderGrid() {
   }
   saveSummary();
 })();
+
+// ============================================================
+// 測驗模式（合併自 quiz.html）
+// 獨立包成 closure，內部變數/函式一律不外洩到全域，
+// 避免跟閃卡/總覽表區塊已使用的同名變數（scriptFilter、buildDropdown...）互相污染
+// ============================================================
+let quizInitialized = false;
+
+function initQuizIfNeeded() {
+  if (quizInitialized) return;
+  quizInitialized = true;
+
+  const dataFile = './gojuon.json'; // 與閃卡/總覽表共用同一份資料源
+
+  let allGojuonData = [];
+  let gojuonData = [];
+
+  const quizScriptFilter = document.getElementById('quizScriptFilter');
+  const quizGroupFilter = document.getElementById('quizGroupFilter');
+
+  const invalidPrefixes = ['ん', 'っ', 'ー'];
+
+  let currentStep = 0;
+  let score = 0;
+  let correctCount = 0;
+  let currentCorrectAnswer = "";
+  let isAnswering = false;
+  let pendingTimeoutId = null;
+
+  const quizArea = document.getElementById('quizArea');
+  const resultCard = document.getElementById('resultCard');
+  const questionText = document.getElementById('questionText');
+  const quizType = document.getElementById('quizType');
+  const optionsGrid = document.getElementById('optionsGrid');
+  const correctSegment = document.getElementById('correctSegment');
+  const wrongSegment = document.getElementById('wrongSegment');
+  const scoreText = document.getElementById('scoreText');
+
+  function getRandomItem(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function shuffleArray(arr) {
+    var res = arr.slice();
+    for (var i = res.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = res[i];
+      res[i] = res[j];
+      res[j] = temp;
+    }
+    return res;
+  }
+
+  function generateValidKanaWord(charCount) {
+    let kanaWord = "";
+    let romajiWord = "";
+    let prevKana = null;
+
+    for (let i = 0; i < charCount; i++) {
+      let chosen;
+      let attempts = 0;
+      do {
+        chosen = getRandomItem(gojuonData);
+        attempts++;
+      } while (
+        attempts < 50 &&
+        (
+          (i === 0 && invalidPrefixes.includes(chosen.kana)) ||
+          (prevKana !== null && chosen.kana === prevKana)
+        )
+      );
+
+      kanaWord += chosen.kana;
+      romajiWord += (i === 0 ? "" : "-") + chosen.romaji;
+      prevKana = chosen.kana;
+    }
+    return { kana: kanaWord, romaji: romajiWord };
+  }
+
+  function getVowel(romaji) {
+    const m = romaji.match(/[aiueo]/);
+    return m ? m[0] : null;
+  }
+
+  function getConfusableFor(kana) {
+    const found = gojuonData.find(item => item.kana === kana);
+    if (found && found.confusing && found.confusing.length > 0) {
+      const validConfusing = found.confusing.filter(c => c !== kana);
+      if (validConfusing.length > 0) return getRandomItem(validConfusing);
+    }
+    if (found) {
+      const v = getVowel(found.romaji);
+      if (v) {
+        const sameRow = gojuonData.filter(item => item.kana !== kana && getVowel(item.romaji) === v);
+        if (sameRow.length > 0) return getRandomItem(sameRow).kana;
+      }
+    }
+    let alt;
+    do { alt = getRandomItem(gojuonData).kana; } while (alt === kana);
+    return alt;
+  }
+
+  function splitIntoKanaUnits(word) {
+    const units = [];
+    let i = 0;
+    while (i < word.length) {
+      const twoChar = word.slice(i, i + 2);
+      if (twoChar.length === 2 && gojuonData.some(item => item.kana === twoChar)) {
+        units.push(twoChar);
+        i += 2;
+      } else {
+        units.push(word[i]);
+        i += 1;
+      }
+    }
+    return units;
+  }
+
+  function generateSinglePointVariant(originalKanaWord) {
+    const chars = splitIntoKanaUnits(originalKanaWord);
+    let attempts = 0;
+    while (attempts < 30) {
+      attempts++;
+      const posArr = chars.slice();
+      const swapIndex = Math.floor(Math.random() * posArr.length);
+      const originalChar = posArr[swapIndex];
+      const replacement = getConfusableFor(originalChar);
+
+      const leftNeighbor = swapIndex > 0 ? posArr[swapIndex - 1] : null;
+      const rightNeighbor = swapIndex < posArr.length - 1 ? posArr[swapIndex + 1] : null;
+      if (replacement === leftNeighbor || replacement === rightNeighbor) {
+        continue;
+      }
+
+      posArr[swapIndex] = replacement;
+      const variantKana = posArr.join("");
+      if (variantKana !== originalKanaWord) {
+        const variantRomaji = posArr
+          .map(k => {
+            const item = gojuonData.find(g => g.kana === k);
+            return item ? item.romaji : "";
+          })
+          .join("-");
+        return { kana: variantKana, romaji: variantRomaji };
+      }
+    }
+    return generateValidKanaWord(chars.length);
+  }
+
+  function nextQuestion() {
+    if (currentStep >= 10) { showResult(); return; }
+
+    isAnswering = true;
+    currentStep++;
+
+    quizType.textContent = `第 ${currentStep} / 10 題`;
+
+    let charCount = 1;
+    if (currentStep >= 5 && currentStep <= 8) charCount = 2;
+    else if (currentStep >= 9) charCount = 3;
+
+    let mode = (Math.random() > 0.5) ? "kanaToRomaji" : "romajiToKana";
+    if (charCount === 3) mode = "kanaToRomaji";
+
+    const wordObj = generateValidKanaWord(charCount);
+    let qText = "", correctOpt = "";
+
+    if (mode === "kanaToRomaji") {
+      qText = wordObj.kana;
+      correctOpt = wordObj.romaji;
+    } else {
+      qText = wordObj.romaji;
+      correctOpt = wordObj.kana;
+    }
+
+    currentCorrectAnswer = correctOpt;
+    questionText.textContent = qText;
+
+    let options = [correctOpt];
+
+    let safetyCounter = 0;
+    const MAX_ATTEMPTS = 200;
+
+    while (options.length < 4 && safetyCounter < MAX_ATTEMPTS) {
+      safetyCounter++;
+      let dummyWordObj;
+      if (charCount === 1) {
+        const targetKana = wordObj.kana;
+        const confKana = getConfusableFor(targetKana);
+        const confObj = gojuonData.find(item => item.kana === confKana);
+        dummyWordObj = confObj ? { kana: confObj.kana, romaji: confObj.romaji } : generateValidKanaWord(charCount);
+      } else {
+        dummyWordObj = generateSinglePointVariant(wordObj.kana);
+      }
+
+      let dummyOpt = (mode === "kanaToRomaji") ? dummyWordObj.romaji : dummyWordObj.kana;
+      if (!options.includes(dummyOpt)) {
+        options.push(dummyOpt);
+      }
+    }
+
+    let fallbackCounter = 0;
+    const MAX_FALLBACK_ATTEMPTS = 300;
+    while (options.length < 4 && fallbackCounter < MAX_FALLBACK_ATTEMPTS) {
+      fallbackCounter++;
+      const fallbackWordObj = (charCount === 1)
+        ? generateValidKanaWord(charCount)
+        : generateSinglePointVariant(wordObj.kana);
+      const fallbackOpt = (mode === "kanaToRomaji") ? fallbackWordObj.romaji : fallbackWordObj.kana;
+      if (!options.includes(fallbackOpt)) {
+        options.push(fallbackOpt);
+      }
+    }
+
+    let placeholderIndex = 1;
+    while (options.length < 4) {
+      const placeholder = `選項${placeholderIndex}`;
+      if (!options.includes(placeholder)) {
+        options.push(placeholder);
+      }
+      placeholderIndex++;
+    }
+
+    options = shuffleArray(options);
+    optionsGrid.innerHTML = "";
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.textContent = opt;
+      btn.onclick = function() { checkAnswer(btn, opt); };
+      optionsGrid.appendChild(btn);
+    });
+  }
+
+  function checkAnswer(selectedBtn, selectedOpt) {
+    if (!isAnswering) return;
+    isAnswering = false;
+
+    const isCorrect = (selectedOpt === currentCorrectAnswer);
+    const allBtns = optionsGrid.querySelectorAll('.opt-btn');
+
+    if (isCorrect) {
+      score += 10;
+      correctCount++;
+      selectedBtn.classList.add('correct');
+    } else {
+      selectedBtn.classList.add('wrong');
+      allBtns.forEach(btn => {
+        if (btn.textContent === currentCorrectAnswer) btn.classList.add('correct');
+      });
+    }
+
+    const wrongCount = currentStep - correctCount;
+    correctSegment.style.width = `${(correctCount / 10) * 100}%`;
+    wrongSegment.style.width = `${(wrongCount / 10) * 100}%`;
+
+    pendingTimeoutId = setTimeout(function() {
+      nextQuestion();
+    }, 1000);
+  }
+
+  // 測驗專屬下拉選單邏輯：與閃卡/總覽表的 buildDropdown 邏輯相同，
+  // 但獨立一份避免共用同一個函式時對 DD_NATIVE 對照表造成混淆
+  const QUIZ_CHECK_ICON = '<svg class="dd-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  const QUIZ_DD_NATIVE = { quizScript: quizScriptFilter, quizGroup: quizGroupFilter };
+
+  function buildQuizDropdown(prefix, options) {
+    const dd = document.getElementById(prefix + "DD");
+    const panel = document.getElementById(prefix + "DDPanel");
+    const label = document.getElementById(prefix + "DDLabel");
+    const nativeSelect = QUIZ_DD_NATIVE[prefix];
+    const currentVal = nativeSelect.value || options[0].value;
+
+    panel.innerHTML = options.map(o =>
+      `<div class="dd-opt${o.value === currentVal ? " selected" : ""}" data-value="${o.value}">${QUIZ_CHECK_ICON}<span>${o.label}</span></div>`
+    ).join("");
+    const selected = options.find(o => o.value === currentVal) || options[0];
+    label.textContent = selected.label;
+
+    panel.querySelectorAll(".dd-opt").forEach(opt => {
+      opt.addEventListener("click", () => {
+        const val = opt.dataset.value;
+        nativeSelect.value = val;
+        panel.querySelectorAll(".dd-opt").forEach(o => o.classList.remove("selected"));
+        opt.classList.add("selected");
+        label.textContent = opt.textContent.trim();
+        dd.classList.remove("open");
+        nativeSelect.dispatchEvent(new Event("change"));
+      });
+    });
+  }
+
+  // dd-btn 開合互動已由頁面最上層的全域事件監聽處理（涵蓋整個 #app，含本區塊的下拉選單），此處不重複綁定
+
+  function applyQuizFilters() {
+    if (pendingTimeoutId !== null) {
+      clearTimeout(pendingTimeoutId);
+      pendingTimeoutId = null;
+    }
+
+    const script = quizScriptFilter.value;
+    const group = quizGroupFilter.value;
+
+    const filtered = allGojuonData.filter(item =>
+      item.script === script &&
+      (group === 'all' || item.group === group) &&
+      Array.isArray(item.confusing) &&
+      item.confusing.length > 0
+    );
+
+    if (filtered.length === 0) {
+      quizArea.style.display = 'none';
+      resultCard.style.display = 'none';
+      questionText.textContent = '';
+      quizType.textContent = '';
+      optionsGrid.innerHTML = '';
+      const errMsg = document.createElement('p');
+      errMsg.style.color = '#98989D';
+      errMsg.style.fontSize = '14px';
+      errMsg.textContent = '這個篩選條件下沒有可用的題庫資料，請切換分類再試一次。';
+      quizArea.querySelector('.quiz-card').appendChild(errMsg);
+      quizArea.style.display = 'flex';
+      return;
+    }
+
+    gojuonData = filtered;
+    isAnswering = false;
+    currentStep = 0;
+    score = 0;
+    correctCount = 0;
+    correctSegment.style.width = '0%';
+    wrongSegment.style.width = '0%';
+    quizArea.style.display = 'flex';
+    resultCard.style.display = 'none';
+    nextQuestion();
+  }
+
+  quizScriptFilter.addEventListener('change', applyQuizFilters);
+  quizGroupFilter.addEventListener('change', applyQuizFilters);
+
+  function showResult() {
+    quizArea.style.display = 'none';
+    resultCard.style.display = 'block';
+    scoreText.textContent = `${score} 分`;
+
+    if (score === 100) {
+      document.getElementById('feedbackText').textContent = "太強了！全部答對，你的五十音實力非常堅強！";
+    } else if (score >= 70) {
+      document.getElementById('feedbackText').textContent = "表現不錯喔！再多練幾次就能拿到滿分了！";
+    } else {
+      document.getElementById('feedbackText').textContent = "別灰心！多練習幾遍再來試試！";
+    }
+  }
+
+  document.getElementById('restartBtn').addEventListener('click', function() {
+    applyQuizFilters();
+  });
+
+  fetch(dataFile)
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then(loadedData => {
+      allGojuonData = loadedData;
+
+      buildQuizDropdown("quizScript", [
+        { value: "hiragana", label: "平假名" },
+        { value: "katakana", label: "片假名" }
+      ]);
+      buildQuizDropdown("quizGroup", [
+        { value: "all", label: "全部類型" },
+        { value: "seion", label: "清音" },
+        { value: "dakuten", label: "濁音/半濁音" },
+        { value: "youon", label: "拗音" }
+      ]);
+
+      applyQuizFilters();
+    })
+    .catch(err => {
+      questionText.textContent = '';
+      quizType.textContent = '資料載入失敗';
+      optionsGrid.innerHTML = '';
+      const errMsg = document.createElement('p');
+      errMsg.style.color = '#98989D';
+      errMsg.style.fontSize = '14px';
+      errMsg.textContent = `無法載入題庫資料（${dataFile}）：${err.message}，請確認檔案存在或重新整理頁面再試一次。`;
+      quizArea.querySelector('.quiz-card').appendChild(errMsg);
+      console.error('五十音資料載入失敗:', err);
+    });
+}
 </script>
 </body>
 </html>
