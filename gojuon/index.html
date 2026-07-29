@@ -1377,7 +1377,15 @@ function initQuizIfNeeded() {
 
   const drawColor = '#2C2C2E'; // 所有模式下，使用者手寫的每一筆統一用同樣的深灰黑色
   let kanaModalMode = 'watch';
-  let drawing = false, lastX = 0, lastY = 0;
+  let drawing = false;
+
+  // 平滑手寫線條的兩個技巧：
+  // 1) 低通濾波：實際落筆點不是直接等於觸控座標，而是用阻尼追蹤，濾掉高頻手抖
+  // 2) 貝茲曲線：用平滑後的點畫二次貝茲線，取代逐點直線段，讓轉角圓滑不生硬
+  const SMOOTHING = 0.35; // 0~1，數字越小越平滑（但延遲感越明顯），0.35 是手感與平滑度的折衷
+  let rawX = 0, rawY = 0;       // 觸控/滑鼠的原始座標
+  let smoothX = 0, smoothY = 0; // 濾波後、實際用來畫線的座標
+  let midX = 0, midY = 0;       // 上一段貝茲曲線的控制點，用來銜接下一段線條
 
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
@@ -1400,24 +1408,45 @@ function initQuizIfNeeded() {
     e.preventDefault();
     drawing = true;
     const p = getPos(e);
-    lastX = p.x; lastY = p.y;
+    rawX = smoothX = midX = p.x;
+    rawY = smoothY = midY = p.y;
   }
   function move(e) {
     if (!drawing || kanaModalMode === 'watch') return;
     e.preventDefault();
     const p = getPos(e);
+    rawX = p.x; rawY = p.y;
+
+    // 濾波後的落筆點慢慢追向原始觸控點，而不是瞬間跳過去，藉此吸收手抖造成的鋸齒
+    smoothX += (rawX - smoothX) * SMOOTHING;
+    smoothY += (rawY - smoothY) * SMOOTHING;
+
     const scale = canvas.width / 600;
     ctx.strokeStyle = drawColor;
     ctx.lineWidth = 14 * scale;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+
+    // 以「上一段中點 → 目前濾波點」為控制點/終點畫二次貝茲曲線，
+    // 曲線終點取兩點中點，讓每一段之間平滑銜接、不會在轉折處出現尖角
+    const nextMidX = (smoothX + midX) / 2;
+    const nextMidY = (smoothY + midY) / 2;
     ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(p.x, p.y);
+    ctx.moveTo(midX, midY);
+    ctx.quadraticCurveTo(smoothX, smoothY, nextMidX, nextMidY);
     ctx.stroke();
-    lastX = p.x; lastY = p.y;
+    midX = nextMidX; midY = nextMidY;
   }
-  function end() { drawing = false; }
+  function end() {
+    if (drawing) {
+      // 放開時把最後一段線補到真正的落筆終點，避免尾端因平滑機制而「縮進去」沒畫到底
+      ctx.beginPath();
+      ctx.moveTo(midX, midY);
+      ctx.lineTo(smoothX, smoothY);
+      ctx.stroke();
+    }
+    drawing = false;
+  }
 
   canvas.addEventListener('mousedown', start);
   canvas.addEventListener('mousemove', move);
