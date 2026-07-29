@@ -254,6 +254,108 @@
     font-weight: 600;
     cursor: pointer;
   }
+
+  /* ===== 假名詳情彈窗（看筆順／跟著寫／自己寫） ===== */
+  .kana-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .kana-modal-overlay.open { display: flex; }
+
+  .kana-modal {
+    position: relative;
+    width: 100%;
+    max-width: 360px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #1C1C1E;
+    border: 0.5px solid #3A3A3C;
+    border-radius: 20px;
+    padding: 20px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .kana-modal-close {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: #E5E5E7;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .kana-modal-close:active { background: rgba(255,255,255,0.18); }
+  .kana-modal-close svg { width: 16px; height: 16px; }
+
+  .kana-modal-header { text-align: center; margin-bottom: 14px; margin-top: 4px; }
+  .kana-modal-kana { font-size: 40px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .kana-modal-romaji { font-size: 13px; color: #9a9a9e; margin-top: 2px; }
+
+  .kana-modal-tabs {
+    display: flex;
+    gap: 6px;
+    background: rgba(255,255,255,0.06);
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+    width: 100%;
+    position: relative;
+  }
+  .kana-tab {
+    flex: 1;
+    padding: 9px 6px;
+    border: none;
+    background: transparent;
+    color: #9a9a9e;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 9px;
+    font-family: inherit;
+  }
+  .kana-tab.active { background: #fff; color: #1c1c1e; }
+
+  .kana-stage {
+    position: relative;
+    width: 100%;
+    max-width: 280px;
+    aspect-ratio: 1 / 1;
+    background: #F5EFE3;
+    border-radius: 14px;
+    border: 0.5px solid #3A3A3C;
+    overflow: hidden;
+  }
+  #kanaGridSvg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+  #kanaDrawCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; }
+
+  .kana-controls { display: flex; gap: 10px; margin-top: 16px; }
+  .kana-btn {
+    padding: 10px 18px;
+    background: #2C2C2E;
+    border: 0.5px solid #3A3A3C;
+    color: #E5E5E7;
+    font-size: 13px;
+    border-radius: 10px;
+    font-family: inherit;
+  }
+  .kana-btn:active { background: #3A3A3C; }
+
+  .kana-hint {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #6E6E73;
+    text-align: center;
+    max-width: 280px;
+    line-height: 1.6;
+  }
 </style>
 </head>
 <body>
@@ -399,6 +501,39 @@
   </div>
 </div>
 <div class="save-indicator" id="saveIndicator">已儲存</div>
+
+<div class="kana-modal-overlay" id="kanaModalOverlay">
+  <div class="kana-modal" id="kanaModal">
+    <button class="kana-modal-close" id="kanaModalClose" aria-label="關閉">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+
+    <div class="kana-modal-header">
+      <div class="kana-modal-kana" id="kanaModalKana">あ</div>
+      <div class="kana-modal-romaji" id="kanaModalRomaji">a</div>
+    </div>
+
+    <div class="kana-modal-tabs">
+      <button class="kana-tab active" data-kana-mode="watch">看筆順</button>
+      <button class="kana-tab" data-kana-mode="trace">跟著寫</button>
+      <button class="kana-tab" data-kana-mode="blank">自己寫</button>
+    </div>
+
+    <div class="kana-stage">
+      <svg id="kanaGridSvg" viewBox="0 0 200 200">
+        <line x1="100" y1="0" x2="100" y2="200" stroke="#C99A7E" stroke-width="0.6" stroke-dasharray="4 4" stroke-dashoffset="2" opacity="0.55"/>
+        <line x1="0" y1="100" x2="200" y2="100" stroke="#C99A7E" stroke-width="0.6" stroke-dasharray="4 4" stroke-dashoffset="2" opacity="0.55"/>
+      </svg>
+      <canvas id="kanaDrawCanvas" width="600" height="600"></canvas>
+    </div>
+
+    <div class="kana-controls" id="kanaControlsRow">
+      <button class="kana-btn" id="kanaClearBtn">清除重寫</button>
+    </div>
+
+    <p class="kana-hint" id="kanaHintText">筆順動畫製作中，敬請期待</p>
+  </div>
+</div>
 
 <script>
   // 在畫面渲染出來的當下（不等 DOMContentLoaded、不等資料載入）就先依網址 hash 決定初始顯示狀態，
@@ -782,7 +917,13 @@ function renderGrid() {
   });
   gridView.innerHTML = html;
   gridView.querySelectorAll(".grid-cell").forEach(cell => {
-    cell.addEventListener("click", () => speak(cell.dataset.kana));
+    cell.addEventListener("click", () => {
+      speak(cell.dataset.kana);
+      if (window.openKanaModal) {
+        const romaji = cell.querySelector(".r")?.textContent || "";
+        window.openKanaModal(cell.dataset.kana, romaji);
+      }
+    });
   });
 }
 
@@ -1215,6 +1356,136 @@ function initQuizIfNeeded() {
       console.error('五十音資料載入失敗:', err);
     });
 }
+
+// ============================================================
+// 假名詳情彈窗（點總覽表格子跳出：看筆順／跟著寫／自己寫）
+// 獨立包成 closure，避免內部變數（drawing、lastX 等）污染全域
+// 目前先做畫布互動骨架；筆順動畫、跟著寫的參考字尚未接上，之後補
+// ============================================================
+(function initKanaModal() {
+  const overlay = document.getElementById('kanaModalOverlay');
+  const modal = document.getElementById('kanaModal');
+  const closeBtn = document.getElementById('kanaModalClose');
+  const kanaEl = document.getElementById('kanaModalKana');
+  const romajiEl = document.getElementById('kanaModalRomaji');
+  const tabs = document.querySelectorAll('.kana-tab');
+  const canvas = document.getElementById('kanaDrawCanvas');
+  const ctx = canvas.getContext('2d');
+  const controlsRow = document.getElementById('kanaControlsRow');
+  const clearBtn = document.getElementById('kanaClearBtn');
+  const hintText = document.getElementById('kanaHintText');
+
+  const drawColor = '#2C2C2E'; // 所有模式下，使用者手寫的每一筆統一用同樣的深灰黑色
+  let kanaModalMode = 'watch';
+  let drawing = false, lastX = 0, lastY = 0;
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0) return; // 彈窗還沒顯示時 rect 會是 0，避免誤將 canvas 尺寸設成 0
+    canvas.width = rect.width * 2;
+    canvas.height = rect.height * 2;
+  }
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+  function start(e) {
+    if (kanaModalMode === 'watch') return;
+    e.preventDefault();
+    drawing = true;
+    const p = getPos(e);
+    lastX = p.x; lastY = p.y;
+  }
+  function move(e) {
+    if (!drawing || kanaModalMode === 'watch') return;
+    e.preventDefault();
+    const p = getPos(e);
+    const scale = canvas.width / 600;
+    ctx.strokeStyle = drawColor;
+    ctx.lineWidth = 14 * scale;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    lastX = p.x; lastY = p.y;
+  }
+  function end() { drawing = false; }
+
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  canvas.addEventListener('mouseup', end);
+  canvas.addEventListener('mouseleave', end);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove', move, { passive: false });
+  canvas.addEventListener('touchend', end);
+
+  clearBtn.addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  });
+
+  function setKanaModalMode(mode) {
+    kanaModalMode = mode;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    controlsRow.innerHTML = '';
+
+    if (mode === 'watch') {
+      hintText.textContent = '筆順動畫製作中，敬請期待';
+      // 看筆順模式先不放清除按鈕（尚無筆畫內容可清）
+    } else if (mode === 'trace') {
+      controlsRow.appendChild(clearBtn);
+      hintText.textContent = '參考字範本製作中，先在下方畫布練習寫寫看';
+    } else if (mode === 'blank') {
+      controlsRow.appendChild(clearBtn);
+      hintText.textContent = '空白格子，憑記憶練習寫寫看';
+    }
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (tab.classList.contains('active')) return;
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      setKanaModalMode(tab.dataset.kanaMode);
+    });
+  });
+
+  function openKanaModal(kana, romaji) {
+    kanaEl.textContent = kana;
+    romajiEl.textContent = romaji;
+    tabs.forEach(t => t.classList.remove('active'));
+    document.querySelector('.kana-tab[data-kana-mode="watch"]').classList.add('active');
+    overlay.classList.add('open');
+    // canvas 在 display:none 狀態下無法量測尺寸，等彈窗顯示出來後才 resize
+    requestAnimationFrame(() => {
+      resizeCanvas();
+      setKanaModalMode('watch');
+    });
+  }
+
+  function closeKanaModal() {
+    overlay.classList.remove('open');
+  }
+
+  closeBtn.addEventListener('click', closeKanaModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeKanaModal();
+  });
+
+  window.addEventListener('resize', () => {
+    if (overlay.classList.contains('open')) resizeCanvas();
+  });
+
+  // 暴露給 renderGrid() 呼叫
+  window.openKanaModal = openKanaModal;
+})();
 </script>
 </body>
 </html>
