@@ -1422,17 +1422,37 @@ function initQuizIfNeeded() {
     if (!drawing || kanaModalMode === 'watch') return;
     e.preventDefault();
     const p = getPos(e);
-    rawX = p.x; rawY = p.y;
 
-    // 濾波後的落筆點慢慢追向原始觸控點，而不是瞬間跳過去，藉此吸收手抖造成的鋸齒
-    smoothX += (rawX - smoothX) * SMOOTHING;
-    smoothY += (rawY - smoothY) * SMOOTHING;
+    // 手指滑快時，瀏覽器 touchmove 觸發頻率跟不上移動速度，
+    // 單次 raw 座標跳動的距離會變很大。若直接把這個大跳動餵進濾波器，
+    // smoothX/Y 會在追趕過程中「過衝」再修正回來，曲線上就會冒出一圈圈細小凸起，
+    // 也就是快速書寫時特別明顯的毛邊。
+    // 解法：偵測跳動距離，如果超過門檻，就在上一個 raw 點與這次 raw 點之間
+    // 補幾個等距插值點，把一大步拆成多個小步驟，每步都各自跑一次濾波+畫線，
+    // 讓濾波過程平順、不再有大幅度追趕。
+    const dx = p.x - rawX, dy = p.y - rawY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const STEP = 8; // 每隔約 8px（canvas 內部座標）插一個點，數字越小補點越密、越平滑
+    const steps = Math.max(1, Math.ceil(dist / STEP));
+
+    for (let i = 1; i <= steps; i++) {
+      const stepX = rawX + dx * (i / steps);
+      const stepY = rawY + dy * (i / steps);
+      drawSmoothedSegment(stepX, stepY);
+    }
+    rawX = p.x; rawY = p.y;
+  }
+
+  // 對單一個（可能是插值出來的）座標點跑一次濾波追蹤，並畫出這一小段貝茲曲線
+  function drawSmoothedSegment(targetX, targetY) {
+    smoothX += (targetX - smoothX) * SMOOTHING;
+    smoothY += (targetY - smoothY) * SMOOTHING;
 
     const scale = canvas.width / 600;
     ctx.strokeStyle = drawColor;
     ctx.lineWidth = 14 * scale;
     // 中間段落改用 butt（平頭）而不是 round，讓每一小段線段緊密相接、
-    // 不會像 round cap 那樣在段落交界處各自疊一顆圓頭，那正是先前毛邊的成因。
+    // 不會像 round cap 那樣在段落交界處各自疊一顆圓頭，那正是先前毛邊的成因之一。
     // 筆畫真正的起點/終點另外手動補圓頭（見 start() 與 end()），視覺上仍是圓潤的筆觸。
     ctx.lineCap = 'butt';
     ctx.lineJoin = 'round';
