@@ -1410,6 +1410,13 @@ function initQuizIfNeeded() {
     const p = getPos(e);
     rawX = smoothX = midX = p.x;
     rawY = smoothY = midY = p.y;
+
+    // 在真正落筆的起點畫一個小圓點，補上筆畫起頭該有的圓頭視覺（butt cap 本身不會畫）
+    const scale = canvas.width / 600;
+    ctx.fillStyle = drawColor;
+    ctx.beginPath();
+    ctx.arc(midX, midY, 7 * scale, 0, Math.PI * 2);
+    ctx.fill();
   }
   function move(e) {
     if (!drawing || kanaModalMode === 'watch') return;
@@ -1424,7 +1431,10 @@ function initQuizIfNeeded() {
     const scale = canvas.width / 600;
     ctx.strokeStyle = drawColor;
     ctx.lineWidth = 14 * scale;
-    ctx.lineCap = 'round';
+    // 中間段落改用 butt（平頭）而不是 round，讓每一小段線段緊密相接、
+    // 不會像 round cap 那樣在段落交界處各自疊一顆圓頭，那正是先前毛邊的成因。
+    // 筆畫真正的起點/終點另外手動補圓頭（見 start() 與 end()），視覺上仍是圓潤的筆觸。
+    ctx.lineCap = 'butt';
     ctx.lineJoin = 'round';
 
     // 以「上一段中點 → 目前濾波點」為控制點/終點畫二次貝茲曲線，
@@ -1447,6 +1457,14 @@ function initQuizIfNeeded() {
       ctx.moveTo(midX, midY);
       ctx.quadraticCurveTo(smoothX, smoothY, rawX, rawY);
       ctx.stroke();
+
+      // 筆畫真正的終點補一個小圓點，呼應 start() 的起點圓頭，
+      // 讓整筆用 butt cap 畫出來的直段+貝茲曲線，首尾兩端仍是圓潤收筆
+      const scale = canvas.width / 600;
+      ctx.fillStyle = drawColor;
+      ctx.beginPath();
+      ctx.arc(rawX, rawY, 7 * scale, 0, Math.PI * 2);
+      ctx.fill();
     }
     drawing = false;
   }
