@@ -1382,7 +1382,7 @@ function initQuizIfNeeded() {
   // 平滑手寫線條的兩個技巧：
   // 1) 低通濾波：實際落筆點不是直接等於觸控座標，而是用阻尼追蹤，濾掉高頻手抖
   // 2) 貝茲曲線：用平滑後的點畫二次貝茲線，取代逐點直線段，讓轉角圓滑不生硬
-  const SMOOTHING = 0.35; // 0~1，數字越小越平滑（但延遲感越明顯），0.35 是手感與平滑度的折衷
+  const SMOOTHING = 0.3; // 0~1，數字越小越平滑（但延遲感越明顯）
   let rawX = 0, rawY = 0;       // 觸控/滑鼠的原始座標
   let smoothX = 0, smoothY = 0; // 濾波後、實際用來畫線的座標
   let midX = 0, midY = 0;       // 上一段貝茲曲線的控制點，用來銜接下一段線條
@@ -1439,10 +1439,13 @@ function initQuizIfNeeded() {
   }
   function end() {
     if (drawing) {
-      // 放開時把最後一段線補到真正的落筆終點，避免尾端因平滑機制而「縮進去」沒畫到底
+      // 主體筆畫全程都是貝茲曲線，唯獨收尾這一小段如果用直線(lineTo)硬接到終點，
+      // 會跟前一段曲線的切線方向不連續，視覺上就會出現明顯折角。
+      // 改成貝茲曲線、控制點用最新的原始觸控座標 rawX/Y（即 move() 最後一次算出的方向），
+      // 讓收尾段平滑地「延續」前一段曲線的走勢，而不是憑空轉向或退化成直線。
       ctx.beginPath();
       ctx.moveTo(midX, midY);
-      ctx.lineTo(smoothX, smoothY);
+      ctx.quadraticCurveTo(smoothX, smoothY, rawX, rawY);
       ctx.stroke();
     }
     drawing = false;
